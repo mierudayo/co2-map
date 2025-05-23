@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -55,10 +55,10 @@ function ZoomTo({ position, zoomLevel }) {
 }
 
 export default function JapanMap() {
-  const [currentLevel, setCurrentLevel] = React.useState('Japan');
-  const [selectedRegion, setSelectedRegion] = React.useState(null);
-  const [zoomTarget, setZoomTarget] = React.useState(null);
-  const [zoomLevel, setZoomLevel] = React.useState(5);
+  const [currentLevel, setCurrentLevel] = useState('Japan');
+  const [selectedRegion, setSelectedRegion] = useState(null);
+  const [zoomTarget, setZoomTarget] = useState(null);
+  const [zoomLevel, setZoomLevel] = useState(5);
 
   const handleMarkerClick = (region, level, zoom) => {
     setSelectedRegion(region);
@@ -97,22 +97,34 @@ export default function JapanMap() {
   };
 
   return (
-    <div>
-      <MapContainer
-        center={[36.2048, 138.2529]} // Japan center
-        zoom={zoomLevel}
-        scrollWheelZoom={true}
-        style={{ height: '100vh', width: '100%' }}
-      >
-        <TileLayer
-          attribution='&copy; OpenStreetMap'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+    <div style={{ display: 'flex' }}>
+      <div style={{ flex: 1 }}>
+        <MapContainer
+          center={[36.2048, 138.2529]} // Japan center
+          zoom={zoomLevel}
+          scrollWheelZoom={true}
+          style={{ height: '100vh', width: '100%' }}
+        >
+          <TileLayer
+            attribution='&copy; OpenStreetMap'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
 
-        {renderMarkers()}
+          {renderMarkers()}
 
-        {zoomTarget && <ZoomTo position={zoomTarget} zoomLevel={zoomLevel} />}
-      </MapContainer>
+          {zoomTarget && <ZoomTo position={zoomTarget} zoomLevel={zoomLevel} />}
+        </MapContainer>
+      </div>
+      <div style={{ flex: 1, padding: '10px', borderLeft: '1px solid #ccc' }}>
+        {selectedRegion ? (
+          <div>
+            <h2>{selectedRegion.name}のデータ</h2>
+            <p>ここにグラフを表示します。</p>
+          </div>
+        ) : (
+          <p>地域を選択してください。</p>
+        )}
+      </div>
     </div>
   );
 }
