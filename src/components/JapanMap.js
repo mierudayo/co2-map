@@ -14,35 +14,93 @@ L.Icon.Default.mergeOptions({
     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-// Dummy data: Prefectures with center coordinates
-const prefectures = [
-  { name: '北海道', lat: 43.0642, lng: 141.3469 },
-  { name: '東京都', lat: 35.6895, lng: 139.6917 },
-  { name: '大阪府', lat: 34.6937, lng: 135.5023 },
-];
+// Hierarchical data: Prefectures, Cities, Wards, etc.
+const data = {
+  Japan: [
+    {
+      name: '北海道',
+      lat: 43.0642,
+      lng: 141.3469,
+      cities: [
+        { name: '札幌市', lat: 43.0618, lng: 141.3545 },
+        // Add more cities here
+      ],
+    },
+    {
+      name: '東京都',
+      lat: 35.6895,
+      lng: 139.6917,
+      cities: [
+        { name: '新宿区', lat: 35.6938, lng: 139.7034 },
+        // Add more cities here
+      ],
+    },
+    {
+      name: '大阪府',
+      lat: 34.6937,
+      lng: 135.5023,
+      cities: [
+        { name: '大阪市', lat: 34.6937, lng: 135.5023 },
+        // Add more cities here
+      ],
+    },
+  ],
+};
 
-// Dummy data: Cities
-const cities = [
-  { name: '札幌市', lat: 43.0618, lng: 141.3545 },
-  { name: '新宿区', lat: 35.6938, lng: 139.7034 },
-  { name: '大阪市', lat: 34.6937, lng: 135.5023 },
-];
-
-// Component to change map view on prefecture click
-function ZoomTo({ position }) {
+// Component to change map view on click
+function ZoomTo({ position, zoomLevel }) {
   const map = useMap();
-  map.setView(position, 10);
+  map.setView(position, zoomLevel);
   return null;
 }
 
 export default function JapanMap() {
+  const [currentLevel, setCurrentLevel] = React.useState('Japan');
+  const [selectedRegion, setSelectedRegion] = React.useState(null);
   const [zoomTarget, setZoomTarget] = React.useState(null);
+  const [zoomLevel, setZoomLevel] = React.useState(5);
+
+  const handleMarkerClick = (region, level, zoom) => {
+    setSelectedRegion(region);
+    setCurrentLevel(level);
+    setZoomTarget([region.lat, region.lng]);
+    setZoomLevel(zoom);
+  };
+
+  const renderMarkers = () => {
+    if (currentLevel === 'Japan') {
+      return data.Japan.map((pref, index) => (
+        <Marker
+          key={index}
+          position={[pref.lat, pref.lng]}
+          eventHandlers={{
+            click: () => handleMarkerClick(pref, 'Prefecture', 8),
+          }}
+        >
+          <Popup>{pref.name}（クリックでズーム）</Popup>
+        </Marker>
+      ));
+    } else if (currentLevel === 'Prefecture' && selectedRegion) {
+      return selectedRegion.cities.map((city, index) => (
+        <Marker
+          key={index}
+          position={[city.lat, city.lng]}
+          eventHandlers={{
+            click: () => handleMarkerClick(city, 'City', 12),
+          }}
+        >
+          <Popup>{city.name}（クリックでズーム）</Popup>
+        </Marker>
+      ));
+    }
+    return null;
+  };
 
   return (
     <div>
       <MapContainer
         center={[36.2048, 138.2529]} // Japan center
-        zoom={5}
+        zoom={zoomLevel}
         scrollWheelZoom={true}
         style={{ height: '100vh', width: '100%' }}
       >
@@ -51,25 +109,9 @@ export default function JapanMap() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {prefectures.map((pref, index) => (
-          <Marker
-            key={index}
-            position={[pref.lat, pref.lng]}
-            eventHandlers={{
-              click: () => setZoomTarget([pref.lat, pref.lng]),
-            }}
-          >
-            <Popup>{pref.name}（クリックでズーム）</Popup>
-          </Marker>
-        ))}
+        {renderMarkers()}
 
-        {cities.map((city, index) => (
-          <Marker key={index} position={[city.lat, city.lng]}>
-            <Popup>{city.name}（ダミーデータ）</Popup>
-          </Marker>
-        ))}
-
-        {zoomTarget && <ZoomTo position={zoomTarget} />}
+        {zoomTarget && <ZoomTo position={zoomTarget} zoomLevel={zoomLevel} />}
       </MapContainer>
     </div>
   );
